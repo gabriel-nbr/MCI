@@ -1,0 +1,893 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bootstrap variance test — animated distribution</title>
+<style>
+  .page-nav {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.page-hidden {
+  display: none !important;
+}
+
+.stat-select {
+  background: var(--panel2);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px;
+}
+:root {
+  color-scheme: dark;
+  --bg: #0b1020;
+  --panel: #121a2c;
+  --panel2: #172238;
+  --text: #edf2ff;
+  --muted: #a8b4cf;
+  --line: #2a3854;
+  --blue: #72a7ff;
+  --orange: #ffb86b;
+  --red: #ff6b7d;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); }
+.deck { min-height: 100vh; display: grid; place-items: center; padding: 28px; }
+.slide { width: min(1120px, 100%); min-height: 650px; display: flex; flex-direction: column; gap: 22px; }
+.eyebrow { color: var(--blue); text-transform: uppercase; letter-spacing: .14em; font-size: .76rem; font-weight: 750; }
+h1 { margin: 0; font-size: clamp(2rem, 4vw, 3.3rem); line-height: 1.05; letter-spacing: -.04em; }
+.subtitle { color: var(--muted); margin: 0; max-width: 800px; line-height: 1.55; }
+.top { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; }
+.pill { border: 1px solid var(--line); border-radius: 999px; color: var(--muted); padding: 8px 12px; font-size: .8rem; white-space: nowrap; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 20px; }
+.chart-wrap { position: relative; }
+canvas { width: 100%; display: block; height: 400px; }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.stat { background: var(--panel2); border: 1px solid var(--line); border-radius: 13px; padding: 14px 16px; min-width: 0; }
+.stat-label { color: var(--muted); font-size: .78rem; margin-bottom: 8px; }
+.stat-value { font-size: clamp(1.05rem, 2vw, 1.45rem); font-weight: 750; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.controls { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+button { background: var(--blue); color: #071124; border: 0; border-radius: 10px; padding: 10px 16px; font-weight: 750; cursor: pointer; }
+button.secondary { background: var(--panel2); color: var(--text); border: 1px solid var(--line); }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--orange); outline-offset: 3px; }
+.speed { display: flex; align-items: center; gap: 10px; color: var(--muted); margin-left: auto; font-size: .85rem; }
+input[type=range] { accent-color: var(--blue); width: 130px; }
+.progress { height: 5px; background: var(--line); border-radius: 99px; overflow: hidden; }
+.progress > div { height: 100%; width: 0%; background: var(--blue); transition: width .12s linear; }
+.legend { display: flex; flex-wrap: wrap; gap: 18px; color: var(--muted); font-size: .82rem; }
+.key { display: inline-flex; align-items: center; gap: 7px; }
+.swatch { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.note { color: var(--muted); font-size: .85rem; line-height: 1.5; margin: 0; }
+@media (max-width: 700px) {
+ .deck { padding: 14px; }
+ .slide { min-height: 0; }
+ .top { flex-direction: column; }
+ .stats { grid-template-columns: repeat(2, 1fr); }
+ canvas { height: 280px; }
+ .speed { margin-left: 0; width: 100%; }
+}
+</style>
+</head>
+<body>
+<main class="deck">
+
+  <nav class="page-nav">
+    <button id="show-variance" type="button">
+      Teste de variâncias
+    </button>
+    <button id="show-permutation" type="button" class="secondary">
+      Teste de permutação
+    </button>
+  </nav>
+
+  <!-- PÁGINA 1: TESTE BOOTSTRAP DE VARIÂNCIAS -->
+  <section class="slide" id="page-variance" aria-labelledby="title">
+    <div class="top">
+      <div>
+        <div class="eyebrow">Teste Bootstrap de Variância</div>
+        <h1 id="title">Simulação da distribuição nula</h1>
+        <p class="subtitle">
+          Cada ponto é uma réplica bootstrap da diferença entre variâncias
+          na idade média ao casar entre sedentárias e nômades.
+        </p>
+      </div>
+      <div class="pill">H₀: Variâncias iguais</div>
+    </div>
+
+    <div class="panel chart-wrap">
+      <canvas id="chart" aria-label="Simulação Bootstrap da Estatística"></canvas>
+      <div class="progress"><div id="progressFill"></div></div>
+
+      <div class="legend" style="margin-top:14px">
+        <span class="key">
+          <i class="swatch" style="background:var(--blue)"></i>
+          Diferença bootstrap
+        </span>
+        <span class="key">
+          <i class="swatch" style="background:var(--orange)"></i>
+          Diferença observada
+        </span>
+        <span class="key">
+          <i class="swatch" style="background:var(--red)"></i>
+          Valores extremos
+        </span>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-label">Réplicas geradas</div>
+        <div class="stat-value" id="count">0 / 9.999</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Diferença observada</div>
+        <div class="stat-value" id="observed">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">p-valor bootstrap</div>
+        <div class="stat-value" id="pvalue">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Proporção extrema</div>
+        <div class="stat-value" id="tailshare">—</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="controls">
+        <button id="play">Iniciar animação</button>
+        <button id="reset" class="secondary">Reiniciar</button>
+        <button id="finish" class="secondary">Mostrar tudo</button>
+        <label class="speed">
+          Velocidade
+          <input id="speed" type="range" min="1" max="100" value="35">
+          <span id="speedLabel">35%</span>
+        </label>
+      </div>
+    </div>
+
+    <p class="note" id="status" aria-live="polite"></p>
+  </section>
+
+  <!-- PÁGINA 2: TESTE DE PERMUTAÇÃO -->
+  <section class="slide page-hidden" id="page-permutation"
+           aria-labelledby="permutation-title">
+
+    <div class="top">
+      <div>
+        <div class="eyebrow">Teste de permutação</div>
+        <h1 id="permutation-title">Distribuição nula</h1>
+        <p class="subtitle">
+          Cada ponto representa uma permutação dos grupos de nômades e
+          sedentárias. A linha laranja indica a estatística observada;
+          os pontos vermelhos indicam resultados pelo menos tão extremos.
+        </p>
+      </div>
+      <div class="pill">H₀: Rótulos permutáveis</div>
+    </div>
+
+    <div class="panel">
+      <label for="permutation-stat">Estatística analisada:</label>
+      <select id="permutation-stat" class="stat-select">
+        <option value="media">Diferença de médias</option>
+        <option value="mediana">Diferença de medianas</option>
+        <option value="HL">Estimador de Hodges–Lehmann</option>
+      </select>
+    </div>
+
+    <div class="panel chart-wrap">
+      <canvas id="permutation-chart"
+              aria-label="Distribuição das estatísticas de permutação"></canvas>
+      <div class="progress">
+        <div id="permutation-progress"></div>
+      </div>
+
+      <div class="legend" style="margin-top:14px">
+        <span class="key">
+          <i class="swatch" style="background:var(--blue)"></i>
+          Estatísticas permutadas
+        </span>
+        <span class="key">
+          <i class="swatch" style="background:var(--orange)"></i>
+          Estatística observada
+        </span>
+        <span class="key">
+          <i class="swatch" style="background:var(--red)"></i>
+          Valores extremos
+        </span>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-label">Permutações exibidas</div>
+        <div class="stat-value" id="permutation-count">0 / 9.999</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Estatística observada</div>
+        <div class="stat-value" id="permutation-observed">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Valor-p bilateral</div>
+        <div class="stat-value" id="permutation-pvalue">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Proporção extrema</div>
+        <div class="stat-value" id="permutation-tailshare">—</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="controls">
+        <button id="permutation-play">Iniciar animação</button>
+        <button id="permutation-reset" class="secondary">Reiniciar</button>
+        <button id="permutation-finish" class="secondary">Mostrar tudo</button>
+        <label class="speed">
+          Velocidade
+          <input id="permutation-speed" type="range"
+                 min="1" max="100" value="35">
+          <span id="permutation-speed-label">35%</span>
+        </label>
+      </div>
+    </div>
+
+    <p class="note" id="permutation-status" aria-live="polite"></p>
+  </section>
+
+</main>
+
+<script src="bootstrap_data.js"></script>
+<script>
+
+function initializeAnimation() {
+
+const canvas = document.getElementById('chart');
+const ctx = canvas.getContext('2d');
+const countEl = document.getElementById('count');
+const pEl = document.getElementById('pvalue');
+const tailEl = document.getElementById('tailshare');
+const obsEl = document.getElementById('observed');
+const progressFill = document.getElementById('progressFill');
+const playBtn = document.getElementById('play');
+const statusEl = document.getElementById('status');
+const speedInput = document.getElementById('speed');
+const speedLabel = document.getElementById('speedLabel');
+let revealed = 0, running = false, raf = null, lastTime = 0, accumulator = 0;
+const vals = DATA.T_boot_var;
+const obs = DATA.T_obs;
+const n = vals.length;
+const maxAbs = Math.max(1, ...vals.map(Math.abs), Math.abs(obs)) * 1.12;
+const binCount = 52;
+const bins = Array.from({length: binCount}, () => []);
+const points = [];
+const extreme = v => Math.abs(v) >= Math.abs(obs);
+const extremeCount = vals.reduce((s, v) => s + (extreme(v) ? 1 : 0), 0);
+const pValue = (1 + extremeCount) / (n + 1);
+obsEl.textContent = obs.toFixed(3);
+pEl.textContent = pValue.toFixed(4);
+tailEl.textContent = (100 * extremeCount / n).toFixed(2) + '%';
+if (DATA.illustrative) statusEl.textContent = 'Illustrative synthetic data. Replace DATA with your actual T_boot_var and T_obs values before presenting.';
+function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+function resize() {
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = Math.max(1, Math.floor(rect.width * dpr));
+  canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  draw();
+}
+function chartGeometry() {
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  return {w, h, left: 52, right: w - 22, top: 44, bottom: h - 48};
+}
+function xMap(v, g) { return g.left + (v + maxAbs) / (2 * maxAbs) * (g.right - g.left); }
+function addPoint(index, animate=true) {
+  const v = vals[index];
+  const bin = Math.max(0, Math.min(binCount-1, Math.floor((v + maxAbs)/(2*maxAbs)*binCount)));
+  const stack = bins[bin].length;
+  bins[bin].push(index);
+  points.push({index, v, bin, stack, y: animate ? -10 : null, falling: animate});
+}
+function reset() {
+  running = false; cancelAnimationFrame(raf); raf = null;
+  revealed = 0; points.length = 0; bins.forEach(b => b.length = 0);
+  playBtn.textContent = 'Start animation';
+  countEl.textContent = `0 / ${n.toLocaleString()}`;
+  progressFill.style.width = '0%';
+  draw();
+}
+function showAll() {
+  running = false; cancelAnimationFrame(raf); raf = null;
+  while (revealed < n) { addPoint(revealed, false); revealed++; }
+  playBtn.textContent = 'Start animation';
+  updateStats(); draw();
+}
+function updateStats() {
+  countEl.textContent = `${revealed.toLocaleString()} / ${n.toLocaleString()}`;
+  progressFill.style.width = (100 * revealed / n) + '%';
+}
+function draw() {
+  if (!canvas.clientWidth) return;
+  const g = chartGeometry(), w=g.w, h=g.h;
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle = css('--panel'); ctx.fillRect(0,0,w,h);
+  const {left,right,top,bottom}=g;
+  ctx.strokeStyle=css('--line'); ctx.lineWidth=1;
+  ctx.font='11px system-ui'; ctx.fillStyle=css('--muted'); ctx.textAlign='center';
+  for (let k=0;k<=6;k++) {
+    const v=-maxAbs+2*maxAbs*k/6, x=xMap(v,g);
+    ctx.beginPath(); ctx.moveTo(x,top); ctx.lineTo(x,bottom); ctx.stroke();
+    ctx.fillText(v.toFixed(2),x,bottom+20);
+  }
+  ctx.strokeStyle=css('--muted'); ctx.beginPath(); ctx.moveTo(left,bottom); ctx.lineTo(right,bottom); ctx.stroke();
+  ctx.fillStyle=css('--muted'); ctx.textAlign='center'; ctx.font='12px system-ui';
+  ctx.fillText('Diferença entre variâncias amostrais bootstrap', (left+right)/2, h-8);
+  const maxStack = Math.max(1, ...bins.map(b => b.length));
+  const radius = 1.2;
+  const yScale = Math.min(2 * radius, (bottom - top - 12) / maxStack);
+  // The points accumulate into a stacked dot distribution.
+  for (const p of points) {
+    const x=xMap(p.v,g);
+    const targetY=bottom-5-p.stack*yScale;
+    const y=p.falling ? p.y : targetY;
+    const radius = 1.2;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, 2 * Math.PI);
+    ctx.fillStyle=extreme(p.v)?css('--red'):css('--blue'); ctx.globalAlpha=.88; ctx.fill(); ctx.globalAlpha=1;
+  }
+  // Observed statistic line and label.
+  const xo=xMap(obs,g);
+  ctx.setLineDash([5,4]); ctx.strokeStyle=css('--orange'); ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(xo,top); ctx.lineTo(xo,bottom); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle=css('--orange'); ctx.textAlign=xo>right-95?'right':'left'; ctx.font='bold 11px system-ui';
+  ctx.fillText('Diferença observada', xo+(xo>right-95?-6:6), top+12);
+  // Density outline is drawn only after all replicates have appeared.
+  if (revealed===n) drawDensity(g);
+}
+function drawDensity(g) {
+  const {left,right,top,bottom}=g;
+  const hist=Array(binCount).fill(0);
+  for (const v of vals) {
+    const b=Math.max(0,Math.min(binCount-1,Math.floor((v+maxAbs)/(2*maxAbs)*binCount)));
+    hist[b]++;
+  }
+  const peak = Math.max(...hist, 1);
+  const maxStack = Math.max(1, ...hist);
+  const scale = Math.min(2.4, (bottom - top - 12) / maxStack);
+  ctx.beginPath();
+  hist.forEach((c,i)=>{
+    const x=left+(i+.5)/binCount*(right-left);
+    const y = bottom - 5 - c * scale;
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.strokeStyle=css('--orange'); ctx.lineWidth=2; ctx.globalAlpha=.85; ctx.stroke(); ctx.globalAlpha=1;
+}
+function tick(now) {
+  if (!running) return;
+  if (!lastTime) lastTime=now;
+  const dt=now-lastTime; lastTime=now;
+  const rate = 40 + Number(speedInput.value) * 16; // dots per second
+  accumulator += dt*rate/1000;
+  const add=Math.floor(accumulator); accumulator-=add;
+  for(let i=0;i<add && revealed<n;i++) { addPoint(revealed,true); revealed++; }
+  const g=chartGeometry(), yBottom=g.bottom;
+  const fallSpeed=5 + Number(speedInput.value)*.12;
+  for(const p of points) if(p.falling) {
+    const target = yBottom - 5 - p.stack * Math.min(
+  2.4,
+  (yBottom - g.top - 12) / Math.max(1, ...bins.map(b => b.length))
+);
+    p.y += fallSpeed;
+    if(p.y>=target) { p.y=target; p.falling=false; }
+  }
+  updateStats(); draw();
+  if(revealed>=n && points.every(p=>!p.falling)) {
+    running=false; playBtn.textContent='Replay animation'; statusEl.textContent='Simulação concluída. Pontos vermelhos são estatísticas bootstrap pelo menos tão extremas quanto a estatística observada';
+  } else { raf=requestAnimationFrame(tick); }
+}
+playBtn.addEventListener('click',()=>{
+  if(running) { running=false; cancelAnimationFrame(raf); playBtn.textContent='Resume animation'; return; }
+  if(revealed>=n) reset();
+  running=true; lastTime=0; playBtn.textContent='Pause'; raf=requestAnimationFrame(tick);
+});
+document.getElementById('reset').addEventListener('click',reset);
+document.getElementById('finish').addEventListener('click',showAll);
+speedInput.addEventListener('input',()=>speedLabel.textContent=speedInput.value+'%');
+window.addEventListener('resize',resize);
+resize();
+}
+initializeAnimation();
+
+
+ // ============================================================
+ // TESTE DE PERMUTAÇÃO — ANIMAÇÃO
+ // Requer DATA.T_media, DATA.T_mediana, DATA.T_HL,
+ // DATA.T_perm_media, DATA.T_perm_mediana e DATA.T_perm_HL.
+ // ============================================================
+
+const permutationPage = document.getElementById('page-permutation');
+const variancePage = document.getElementById('page-variance');
+
+const showVarianceBtn = document.getElementById('show-variance');
+const showPermutationBtn = document.getElementById('show-permutation');
+
+const permutationCanvas = document.getElementById('permutation-chart');
+const permutationCtx = permutationCanvas.getContext('2d');
+
+const permutationCountEl = document.getElementById('permutation-count');
+const permutationObservedEl = document.getElementById('permutation-observed');
+const permutationPvalueEl = document.getElementById('permutation-pvalue');
+const permutationTailEl = document.getElementById('permutation-tailshare');
+const permutationProgress = document.getElementById('permutation-progress');
+const permutationPlayBtn = document.getElementById('permutation-play');
+const permutationSpeed = document.getElementById('permutation-speed');
+const permutationSpeedLabel = document.getElementById('permutation-speed-label');
+const permutationSelect = document.getElementById('permutation-stat');
+const permutationStatus = document.getElementById('permutation-status');
+
+const permutationConfigs = {
+  media: {
+    observed: DATA.T_media,
+    values: DATA.T_perm_media
+  },
+  mediana: {
+    observed: DATA.T_mediana,
+    values: DATA.T_perm_mediana
+  },
+  HL: {
+    observed: DATA.T_HL,
+    values: DATA.T_perm_HL
+  }
+};
+
+let permutationValues = [];
+let permutationObserved = 0;
+let permutationN = 0;
+let permutationMaxAbs = 1;
+
+let permutationRevealed = 0;
+let permutationPoints = [];
+let permutationBins = [];
+
+let permutationRunning = false;
+let permutationRaf = null;
+let permutationLastTime = 0;
+let permutationAccumulator = 0;
+
+const permutationBinCount = 52;
+
+function permutationCss(name) {
+  return getComputedStyle(document.documentElement)
+    .getPropertyValue(name).trim();
+}
+
+// Alterna entre as duas páginas.
+showVarianceBtn.addEventListener('click', () => {
+  variancePage.classList.remove('page-hidden');
+  permutationPage.classList.add('page-hidden');
+
+  showVarianceBtn.classList.remove('secondary');
+  showPermutationBtn.classList.add('secondary');
+
+  window.dispatchEvent(new Event('resize'));
+});
+
+showPermutationBtn.addEventListener('click', () => {
+  variancePage.classList.add('page-hidden');
+  permutationPage.classList.remove('page-hidden');
+
+  showPermutationBtn.classList.remove('secondary');
+  showVarianceBtn.classList.add('secondary');
+
+  // Espera o navegador exibir a página antes de medir o canvas.
+  requestAnimationFrame(() => {
+    permutationResize();
+    permutationDraw();
+  });
+});
+
+function permutationStop() {
+  permutationRunning = false;
+
+  if (permutationRaf !== null) {
+    cancelAnimationFrame(permutationRaf);
+  }
+
+  permutationRaf = null;
+  permutationLastTime = 0;
+  permutationAccumulator = 0;
+}
+
+function permutationLoadStatistic() {
+  permutationStop();
+
+  const config = permutationConfigs[permutationSelect.value];
+
+  if (
+    !config ||
+    !Number.isFinite(config.observed) ||
+    !Array.isArray(config.values) ||
+    config.values.length === 0 ||
+    !config.values.every(Number.isFinite)
+  ) {
+    permutationStatus.textContent =
+      'Erro: verifique os dados da estatística selecionada em bootstrap_data.js.';
+    permutationCountEl.textContent = 'Dados inválidos';
+    permutationObservedEl.textContent = '—';
+    permutationPvalueEl.textContent = '—';
+    permutationTailEl.textContent = '—';
+    permutationProgress.style.width = '0%';
+    permutationPoints = [];
+    permutationValues = [];
+    permutationDraw();
+    return;
+  }
+
+  permutationValues = config.values;
+  permutationObserved = config.observed;
+  permutationN = permutationValues.length;
+
+  permutationMaxAbs = Math.max(
+    1,
+    ...permutationValues.map(Math.abs),
+    Math.abs(permutationObserved)
+  ) * 1.12;
+
+  permutationRevealed = 0;
+  permutationPoints = [];
+  permutationBins = Array.from(
+    { length: permutationBinCount },
+    () => []
+  );
+
+  const extremeCount = permutationValues.reduce(
+    (sum, value) =>
+      sum + (
+        Math.abs(value) >= Math.abs(permutationObserved) ? 1 : 0
+      ),
+    0
+  );
+
+  permutationObservedEl.textContent = permutationObserved.toFixed(3);
+
+  // Correção de Monte Carlo para o valor-p.
+  permutationPvalueEl.textContent =
+    ((extremeCount + 1) / (permutationN + 1)).toFixed(4);
+
+  permutationTailEl.textContent =
+    (100 * extremeCount / permutationN).toFixed(2) + '%';
+
+  permutationStatus.textContent = '';
+  permutationPlayBtn.textContent = 'Iniciar animação';
+
+  permutationUpdateStats();
+  permutationDraw();
+}
+
+function permutationGeometry() {
+  const w = permutationCanvas.clientWidth;
+  const h = permutationCanvas.clientHeight;
+
+  return {
+    w,
+    h,
+    left: 52,
+    right: w - 22,
+    top: 44,
+    bottom: h - 48
+  };
+}
+
+function permutationX(value, g) {
+  return g.left +
+    (value + permutationMaxAbs) /
+    (2 * permutationMaxAbs) *
+    (g.right - g.left);
+}
+
+function permutationAddPoint(index, animate = true) {
+  const value = permutationValues[index];
+
+  const bin = Math.max(
+    0,
+    Math.min(
+      permutationBinCount - 1,
+      Math.floor(
+        (value + permutationMaxAbs) /
+        (2 * permutationMaxAbs) *
+        permutationBinCount
+      )
+    )
+  );
+
+  const stack = permutationBins[bin].length;
+  permutationBins[bin].push(index);
+
+  permutationPoints.push({
+    value,
+    stack,
+    y: animate ? -10 : null,
+    falling: animate
+  });
+}
+
+function permutationUpdateStats() {
+  permutationCountEl.textContent =
+    `${permutationRevealed.toLocaleString()} / ${permutationN.toLocaleString()}`;
+
+  permutationProgress.style.width =
+    (100 * permutationRevealed / permutationN) + '%';
+}
+
+function permutationDraw() {
+  if (
+    !permutationCanvas.clientWidth ||
+    !permutationCanvas.clientHeight
+  ) {
+    return;
+  }
+
+  const ctx = permutationCtx;
+  const g = permutationGeometry();
+  const { w, h, left, right, top, bottom } = g;
+
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = permutationCss('--panel');
+  ctx.fillRect(0, 0, w, h);
+
+  if (!permutationValues.length) {
+    ctx.fillStyle = permutationCss('--muted');
+    ctx.font = '13px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('Dados de permutação indisponíveis', w / 2, h / 2);
+    return;
+  }
+
+  ctx.strokeStyle = permutationCss('--line');
+  ctx.lineWidth = 1;
+  ctx.font = '11px system-ui';
+  ctx.fillStyle = permutationCss('--muted');
+  ctx.textAlign = 'center';
+
+  for (let k = 0; k <= 6; k++) {
+    const value = -permutationMaxAbs +
+      2 * permutationMaxAbs * k / 6;
+    const x = permutationX(value, g);
+
+    ctx.beginPath();
+    ctx.moveTo(x, top);
+    ctx.lineTo(x, bottom);
+    ctx.stroke();
+
+    ctx.fillText(value.toFixed(2), x, bottom + 20);
+  }
+
+  ctx.strokeStyle = permutationCss('--muted');
+  ctx.beginPath();
+  ctx.moveTo(left, bottom);
+  ctx.lineTo(right, bottom);
+  ctx.stroke();
+
+  ctx.fillStyle = permutationCss('--muted');
+  ctx.font = '12px system-ui';
+  ctx.fillText(
+    'Valor da estatística de permutação',
+    (left + right) / 2,
+    h - 8
+  );
+
+  const maxStack = Math.max(
+    1,
+    ...permutationBins.map(bin => bin.length)
+  );
+
+  const yScale = Math.min(
+    2.4,
+    (bottom - top - 12) / maxStack
+  );
+
+  for (const point of permutationPoints) {
+    const x = permutationX(point.value, g);
+    const targetY = bottom - 5 - point.stack * yScale;
+    const y = point.falling ? point.y : targetY;
+
+    ctx.beginPath();
+    ctx.arc(x, y, 1.2, 0, 2 * Math.PI);
+
+    ctx.fillStyle =
+      Math.abs(point.value) >= Math.abs(permutationObserved)
+        ? permutationCss('--red')
+        : permutationCss('--blue');
+
+    ctx.globalAlpha = 0.88;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  const observedX = permutationX(permutationObserved, g);
+
+  ctx.setLineDash([5, 4]);
+  ctx.strokeStyle = permutationCss('--orange');
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(observedX, top);
+  ctx.lineTo(observedX, bottom);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = permutationCss('--orange');
+  ctx.textAlign = observedX > right - 95 ? 'right' : 'left';
+  ctx.font = 'bold 11px system-ui';
+
+  ctx.fillText(
+    'Observada',
+    observedX + (observedX > right - 95 ? -6 : 6),
+    top + 12
+  );
+}
+
+function permutationReset() {
+  permutationStop();
+
+  permutationRevealed = 0;
+  permutationPoints = [];
+  permutationBins.forEach(bin => bin.length = 0);
+
+  permutationPlayBtn.textContent = 'Iniciar animação';
+  permutationStatus.textContent = '';
+
+  permutationUpdateStats();
+  permutationDraw();
+}
+
+function permutationShowAll() {
+  if (!permutationValues.length) return;
+
+  permutationStop();
+
+  while (permutationRevealed < permutationN) {
+    permutationAddPoint(permutationRevealed, false);
+    permutationRevealed++;
+  }
+
+  permutationUpdateStats();
+  permutationDraw();
+
+  permutationPlayBtn.textContent = 'Reiniciar animação';
+  permutationStatus.textContent =
+    'Simulação concluída. Os pontos vermelhos representam estatísticas ' +
+    'pelo menos tão extremas quanto a observada.';
+}
+
+function permutationTick(now) {
+  if (!permutationRunning) return;
+
+  if (!permutationLastTime) permutationLastTime = now;
+
+  const dt = now - permutationLastTime;
+  permutationLastTime = now;
+
+  const rate = 40 + Number(permutationSpeed.value) * 16;
+  permutationAccumulator += dt * rate / 1000;
+
+  const amount = Math.floor(permutationAccumulator);
+  permutationAccumulator -= amount;
+
+  for (
+    let i = 0;
+    i < amount && permutationRevealed < permutationN;
+    i++
+  ) {
+    permutationAddPoint(permutationRevealed, true);
+    permutationRevealed++;
+  }
+
+  const g = permutationGeometry();
+  const maxStack = Math.max(
+    1,
+    ...permutationBins.map(bin => bin.length)
+  );
+
+  const yScale = Math.min(
+    2.4,
+    (g.bottom - g.top - 12) / maxStack
+  );
+
+  const fallSpeed = 5 + Number(permutationSpeed.value) * 0.12;
+
+  for (const point of permutationPoints) {
+    if (!point.falling) continue;
+
+    const targetY = g.bottom - 5 - point.stack * yScale;
+
+    point.y += fallSpeed;
+
+    if (point.y >= targetY) {
+      point.y = targetY;
+      point.falling = false;
+    }
+  }
+
+  permutationUpdateStats();
+  permutationDraw();
+
+  if (
+    permutationRevealed >= permutationN &&
+    permutationPoints.every(point => !point.falling)
+  ) {
+    permutationStop();
+    permutationPlayBtn.textContent = 'Reiniciar animação';
+    permutationStatus.textContent =
+      'Simulação concluída. Os pontos vermelhos representam estatísticas ' +
+      'pelo menos tão extremas quanto a observada.';
+  } else {
+    permutationRaf = requestAnimationFrame(permutationTick);
+  }
+}
+
+permutationPlayBtn.addEventListener('click', () => {
+  if (!permutationValues.length) {
+    permutationStatus.textContent =
+      'Não é possível iniciar: verifique os dados em bootstrap_data.js.';
+    return;
+  }
+
+  if (permutationRunning) {
+    permutationStop();
+    permutationPlayBtn.textContent = 'Continuar animação';
+    return;
+  }
+
+  if (permutationRevealed >= permutationN) {
+    permutationReset();
+  }
+
+  permutationRunning = true;
+  permutationLastTime = 0;
+  permutationPlayBtn.textContent = 'Pausar';
+  permutationRaf = requestAnimationFrame(permutationTick);
+});
+
+document.getElementById('permutation-reset')
+  .addEventListener('click', permutationReset);
+
+document.getElementById('permutation-finish')
+  .addEventListener('click', permutationShowAll);
+
+permutationSelect.addEventListener('change', permutationLoadStatistic);
+
+permutationSpeed.addEventListener('input', () => {
+  permutationSpeedLabel.textContent = permutationSpeed.value + '%';
+});
+
+function permutationResize() {
+  if (!permutationCanvas.clientWidth || !permutationCanvas.clientHeight) {
+    return;
+  }
+
+  const rect = permutationCanvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+
+  permutationCanvas.width = Math.max(1, Math.floor(rect.width * dpr));
+  permutationCanvas.height = Math.max(1, Math.floor(rect.height * dpr));
+
+  permutationCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  permutationDraw();
+}
+
+window.addEventListener('resize', permutationResize);
+
+permutationLoadStatistic();
+
+requestAnimationFrame(() => {
+  permutationResize();
+});
+
+</script>
+</body>
+</html>
