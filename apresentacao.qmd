@@ -1,0 +1,78 @@
+---
+title: "Comparação entre sociedades móveis e sedentárias"
+subtitle: "Idade ao casamento das mulheres"
+author: "Seu nome"
+lang: pt-BR
+format:
+  revealjs:
+    theme: dark
+    css: estilo.css
+    background-color: "#0b1020"
+    title-slide: false
+    slide-number: true
+    transition: slide
+    width: 1280
+    height: 720
+    embed-resources: true
+---
+## Pergunta de pesquisa
+
+A idade média ao casamento das mulheres difere entre sociedades móveis e sedentárias?
+
+- Grupo 1: sociedades móveis (*Mobile*).
+- Grupo 2: sociedades sedentárias (*Sedentary*).
+- Variável: idade média ao casamento das mulheres, em anos.
+
+## Dados
+
+Apresente aqui:
+
+- Número de sociedades em cada grupo.
+- Estatísticas descritivas.
+- Gráficos das distribuições.
+- Possíveis limitações dos dados.
+
+## Metodologia
+
+### Teste de variâncias
+
+Explique a hipótese nula, a estatística de teste e o procedimento de bootstrap.
+
+### Teste de permutação
+
+Explique a hipótese nula de igualdade das médias e como as etiquetas dos grupos são permutadas.
+
+
+---
+
+<div style="
+  border: 1px solid #3a4660;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #0b1020;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+">
+  <iframe
+    src="bootstrap_variance_animation.html"
+    width="100%"
+    height="750"
+    style="display: block; border: none;"
+  ></iframe>
+</div>
+
+## Resultados
+
+Apresente as diferenças observadas entre os grupos:
+
+- Diferença entre médias.
+- Diferença entre medianas.
+- Estimador de Hodges–Lehmann.
+- Valores-p e intervalos de confiança.
+
+## Interpretação
+
+Discuta a magnitude das diferenças, a incerteza estatística e as limitações da análise.
+
+## Conclusão
+
+Resuma o que os resultados permitem concluir sobre as sociedades analisadas.

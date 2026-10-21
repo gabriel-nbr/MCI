@@ -1,0 +1,17 @@
+.reveal-viewport,
+.reveal {
+  background-color: #0b1020 !important;
+  color: #edf2ff;
+}
+
+.reveal h1,
+.reveal h2,
+.reveal h3,
+.reveal p,
+.reveal li {
+  color: #edf2ff;
+}
+
+.reveal a {
+  color: #72a7ff;
+}
