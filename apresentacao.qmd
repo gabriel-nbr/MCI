@@ -13,7 +13,7 @@ format:
     transition: slide
     width: 1280
     height: 720
-    embed-resources: true
+
 ---
 ## Pergunta de pesquisa
 
@@ -53,7 +53,7 @@ Explique a hipótese nula de igualdade das médias e como as etiquetas dos grupo
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
 ">
   <iframe
-    src="bootstrap_variance_animation.html"
+    src="./bootstrap_variance_animation.html"
     width="100%"
     height="750"
     style="display: block; border: none;"
